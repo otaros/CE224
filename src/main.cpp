@@ -5,8 +5,7 @@
 #include "Adafruit_AHTX0.h"
 #include "Adafruit_SSD1306.h"
 // #include "Adafruit_ST7735.h"
-// #include "RTClib.h"
-// #include "SD.h"
+#include "SD.h"
 
 /*--------------------------------- Define ---------------------------------*/
 // begin
@@ -17,40 +16,49 @@
 #define LIGHT_METTER_ADDRESS 0x23
 #define REFRESH_TIME 5
 #define MOISTURE_PIN AIN0
-// #define MOSI_PIN SPI_PSELMOSI0
-// #define MISO_PIN SPI_PSELMISO0
-// #define SCK_PIN SPI_PSELSCK0
-// #define CS_PIN SPI_PSELSS0
+#define MOSI_PIN SPI_PSELMOSI0
+#define MISO_PIN SPI_PSELMISO0
+#define SCK_PIN SPI_PSELSCK0
+// #define DISPLAY_CS_PIN P0_27
+#define SD_CS_PIN P0_10
 // #define TRIGGER_PIN P1_11 // D2
-// Flags
+// Flags signal for flag1
 #define NEW_SENSING_CYCLE_FLAG (1UL << 0)
 #define DONE_SENSING_FLAG (1UL << 1)
-// end
+#define READY_TO_DISPLAY_FLAG (1UL << 2)
+// Flags signal for flag2
+#define WRITE_SD_CARD_FLAG (1UL << 0)
+#define DATA_READY_TO_WRITE_FLAG (1UL << 1)
 /*------------------------------- Namespace -------------------------------*/
 using namespace std;
 using namespace mbed;
 using namespace rtos;
 /*-------------------------------- Typedef --------------------------------*/
-typedef struct Package
+typedef struct
 {
   float lux = 0.0, moist = 0.0;
   sensors_event_t humidity, temp;
-};
+} Package;
+/*------------------------------- Variables -------------------------------*/
+
 /*------------------------------- Instances--------------------------------*/
 BH1750 lightMeter(LIGHT_METTER_ADDRESS);                                  // Light meter sensor
 Adafruit_AHTX0 humTemp;                                                   // Humidity and temperature sensor
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET); // OLED I2C display
 // Adafruit_ST7735 tft = Adafruit_ST7735(MOSI_PIN, MISO_PIN, SCK_PIN, CS_PIN, OLED_RESET); // TFT SPI display
-EventFlags flags; // Event flags
+EventFlags flag1; // Event flag1
+EventFlags flag2; // Event flag2
 Thread mainThread;
 Thread sensorThread;
 Thread displayThread;
-Thread checkFlags;
 Thread memMgrThread;
 Ticker senseTicker;
+Ticker writeSDCard;
 // InterruptIn trigger(TRIGGER_PIN);
-Queue<Package, 16> Data; // Queue for raw input data
-MemoryPool<Package, 16> memPool;
+Queue<Package, 1> dataFromSensor; // Queue for raw input data
+Queue<Package, 1> dataForDisplay; // Queue for data to be displayed
+Queue<Package, 1> dataForMemMgr;  // Queue for data to be stored in SD card
+MemoryPool<Package, 3> memPool;
 
 /*-------------------------- Function prototypes --------------------------*/
 void App_Task();
@@ -58,6 +66,7 @@ void processInput_Task();
 void display_Task();
 void memMgr_Task();
 void startNewSensingCycle();
+void writetoSDCard();
 float toPercent(int, float, float, float, float);
 
 /*---------------------------------- Code ----------------------------------*/
@@ -68,12 +77,14 @@ void setup()
   display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);                              // Initialize display
   lightMeter.begin(BH1750::ONE_TIME_HIGH_RES_MODE_2, LIGHT_METTER_ADDRESS, nullptr); // Initialize light meter
   humTemp.begin();                                                                   // Initialize humidity and temperature sensor
+  SD.begin(SD_CS_PIN);                                                               // Initialize SD card
 
   senseTicker.attach(&startNewSensingCycle, chrono::seconds(REFRESH_TIME)); // Auto set Sensing flag every 5 seconds
+  writeSDCard.attach(&writetoSDCard, chrono::seconds(20));                  // Auto write to SD card every 20 seconds
   mainThread.start(App_Task);
   sensorThread.start(processInput_Task);
   displayThread.start(display_Task);
-  checkFlags.start(startNewSensingCycle);
+  memMgrThread.start(memMgr_Task);
 }
 
 void loop()
@@ -84,6 +95,21 @@ void App_Task()
 {
   while (1)
   {
+    flag1.wait_any(DONE_SENSING_FLAG);
+    Package *pack = nullptr;
+    dataFromSensor.try_get(&pack);
+    Package *pack2 = memPool.try_alloc();
+    *pack2 = *pack;
+    dataForDisplay.try_put(pack2);
+    flag1.set(READY_TO_DISPLAY_FLAG);
+    if (flag2.wait_any(WRITE_SD_CARD_FLAG, 50) == WRITE_SD_CARD_FLAG)
+    {
+      Package *pack3 = memPool.try_alloc();
+      *pack3 = *pack;
+      dataForMemMgr.try_put(pack);
+      flag2.set(DATA_READY_TO_WRITE_FLAG);
+    }
+    memPool.free(pack);
   }
 }
 
@@ -93,7 +119,7 @@ void processInput_Task()
   // float *luxRaw = new float(0.0);
   while (1)
   {
-    flags.wait_any(NEW_SENSING_CYCLE_FLAG); // Wait for sensing signal
+    flag1.wait_any(NEW_SENSING_CYCLE_FLAG); // Wait for sensing signal
 
     Serial.println("Sensing..."); // Start sensing
 
@@ -109,9 +135,9 @@ void processInput_Task()
     // pack->humidity.relative_humidity = random(0, 100) * 0.982;
     // pack->moist = rand() % 100 * 0.967;
 
-    Data.try_put(pack); // Push data to rawData
+    dataFromSensor.try_put(pack); // Push data to rawData
 
-    flags.set(DONE_SENSING_FLAG);
+    flag1.set(DONE_SENSING_FLAG);
 
     Serial.println("Done sensing"); // End sensing
   }
@@ -125,10 +151,10 @@ void display_Task()
 
   while (1)
   {
-    if (flags.wait_any(DONE_SENSING_FLAG) == DONE_SENSING_FLAG) // If new data processed
+    if (flag1.wait_any(READY_TO_DISPLAY_FLAG) == READY_TO_DISPLAY_FLAG) // If new data processed
     {
       Package *pack = nullptr;
-      Data.try_get(&pack);
+      dataForDisplay.try_get(&pack);
       displayLux = pack->lux;
       displayTemp = pack->temp.temperature;
       displayHum = pack->humidity.relative_humidity;
@@ -159,14 +185,30 @@ void display_Task()
     display.print(displayMoist);
     display.println(" %");
     display.display();
+
     ThisThread::sleep_for(chrono::seconds(1));
   }
 }
 
 void memMgr_Task()
 {
+  SDLib::File dataFile;
+  dataFile = SD.open("data.txt", FILE_WRITE);
   while (1)
   {
+    flag2.wait_any();
+    Package *pack = nullptr;
+    dataForMemMgr.try_get(&pack);
+
+    dataFile.print(pack->lux);
+    dataFile.print(',');
+    dataFile.print(pack->temp.temperature);
+    dataFile.print(',');
+    dataFile.print(pack->humidity.relative_humidity);
+    dataFile.print(',');
+    dataFile.println(pack->moist);
+
+    memPool.free(pack);
   }
 }
 
@@ -177,5 +219,10 @@ float toPercent(int x, float in_min = 0.0, float in_max = 1024.0, float out_min 
 
 void startNewSensingCycle()
 {
-  flags.set(NEW_SENSING_CYCLE_FLAG); // Set sensing flag every 5 seconds
+  flag1.set(NEW_SENSING_CYCLE_FLAG); // Set sensing flag every 5 seconds
+}
+
+void writetoSDCard()
+{
+  flag2.set(WRITE_SD_CARD_FLAG);
 }
