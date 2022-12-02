@@ -15,12 +15,12 @@
 #define DISPLAY_ADDRESS 0x3C
 #define LIGHT_METTER_ADDRESS 0x23
 #define REFRESH_TIME 5
-#define MOISTURE_PIN AIN0
+#define MOISTURE_PIN A0
 #define MOSI_PIN SPI_PSELMOSI0
 #define MISO_PIN SPI_PSELMISO0
 #define SCK_PIN SPI_PSELSCK0
 // #define DISPLAY_CS_PIN P0_27
-#define SD_CS_PIN P0_10
+#define SD_CS_PIN D9
 // #define TRIGGER_PIN P1_11 // D2
 // Flags signal for flag1
 #define NEW_SENSING_CYCLE_FLAG (1UL << 0)
@@ -74,10 +74,15 @@ void setup()
 {
   Serial.begin(9600); // Initialize serial port
 
-  display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);                              // Initialize display
-  lightMeter.begin(BH1750::ONE_TIME_HIGH_RES_MODE_2, LIGHT_METTER_ADDRESS, nullptr); // Initialize light meter
-  humTemp.begin();                                                                   // Initialize humidity and temperature sensor
-  SD.begin(SD_CS_PIN);                                                               // Initialize SD card
+  display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS); // Initialize display
+  lightMeter.begin();                                   // Initialize light meter
+  humTemp.begin();                                      // Initialize humidity and temperature sensor
+  if (!SD.begin(9))                                     // Initialize SD card
+  {
+    Serial.println("initialization failed!");
+    while (1)
+      ;
+  }
 
   senseTicker.attach(&startNewSensingCycle, chrono::seconds(REFRESH_TIME)); // Auto set Sensing flag every 5 seconds
   writeSDCard.attach(&writetoSDCard, chrono::seconds(20));                  // Auto write to SD card every 20 seconds
@@ -193,10 +198,10 @@ void display_Task()
 void memMgr_Task()
 {
   SDLib::File dataFile;
-  dataFile = SD.open("data.txt", FILE_WRITE);
   while (1)
   {
-    flag2.wait_any();
+    flag2.wait_any(DATA_READY_TO_WRITE_FLAG);
+    dataFile = SD.open("data.txt", FILE_WRITE);
     Package *pack = nullptr;
     dataForMemMgr.try_get(&pack);
 
@@ -208,6 +213,9 @@ void memMgr_Task()
     dataFile.print(',');
     dataFile.println(pack->moist);
 
+    dataFile.close();
+
+    Serial.println("Done writing to SD card");
     memPool.free(pack);
   }
 }
