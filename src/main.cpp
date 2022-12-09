@@ -1,6 +1,5 @@
-
-/*-------------------------------- Includes --------------------------------*/
 #include <mbed.h>
+/*-------------------------------- Includes --------------------------------*/
 #include "BH1750.h"
 #include "Adafruit_AHTX0.h"
 #include "Adafruit_SSD1306.h"
@@ -14,6 +13,7 @@
 #define OLED_RESET -1
 #define DISPLAY_ADDRESS 0x3C
 #define LIGHT_METTER_ADDRESS 0x23
+#define MQ_UNO_ADDRESS 0x30
 #define REFRESH_TIME 5
 #define MOISTURE_PIN A0
 #define MOSI_PIN SPI_PSELMOSI0
@@ -73,16 +73,11 @@ float toPercent(int, float, float, float, float);
 void setup()
 {
   Serial.begin(9600); // Initialize serial port
-
+  Wire.begin();
   display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS); // Initialize display
   lightMeter.begin();                                   // Initialize light meter
   humTemp.begin();                                      // Initialize humidity and temperature sensor
-  if (!SD.begin(9))                                     // Initialize SD card
-  {
-    Serial.println("initialization failed!");
-    while (1)
-      ;
-  }
+  SD.begin(9);                                          // Initialize SD card
 
   senseTicker.attach(&startNewSensingCycle, chrono::seconds(REFRESH_TIME)); // Auto set Sensing flag every 5 seconds
   writeSDCard.attach(&writetoSDCard, chrono::seconds(20));                  // Auto write to SD card every 20 seconds
@@ -191,7 +186,7 @@ void display_Task()
     display.println(" %");
     display.display();
 
-    ThisThread::sleep_for(chrono::seconds(1));
+    ThisThread::sleep_for(chrono::seconds(1) + chrono::milliseconds(250));
   }
 }
 
