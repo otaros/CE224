@@ -149,7 +149,7 @@ void processInput_Task()
 
 void display_Task()
 {
-  float displayLux = 0.0, displayTemp = 0.0, displayHum = 0.0, displayMoist = 0.0;
+  float displayLux = 0.0, displayTemp = 0.0, displayHum = 0.0, displayMoist = 0.0, displayMethane = 0.0, displayCO = 0.0, displayAlcohol = 0.0;
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 
@@ -159,6 +159,9 @@ void display_Task()
     {
       Package *pack = nullptr;
       dataForDisplay.try_get(&pack);
+      displayMethane = pack->methane;
+      displayCO = pack->carbon_monoxide;
+      displayAlcohol = pack->alcohol;
       displayLux = pack->lux;
       displayTemp = pack->temp.temperature;
       displayHum = pack->humidity.relative_humidity;
@@ -188,6 +191,21 @@ void display_Task()
     display.print("Soil: ");
     display.print(displayMoist);
     display.println(" %");
+    display.display();
+
+    ThisThread::sleep_for(chrono::seconds(1) + chrono::milliseconds(250));
+
+    display.setCursor(0, 0);
+    display.clearDisplay();
+    display.print("Alcohol: ");
+    display.print(displayAlcohol);
+    display.println(" ppm");
+    display.print("CH4: ");
+    display.print(displayMethane);
+    display.println(" ppm");
+    display.print("CO: ");
+    display.print(displayCO);
+    display.println(" ppm");
     display.display();
 
     ThisThread::sleep_for(chrono::seconds(1) + chrono::milliseconds(250));
