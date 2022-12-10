@@ -36,7 +36,7 @@ using namespace rtos;
 /*-------------------------------- Typedef --------------------------------*/
 typedef struct
 {
-  float lux = 0.0, moist = 0.0;
+  float lux = 0.0, moist = 0.0, alcohol = 0.0, methane = 0.0, carbon_monoxide = 0.0;
   sensors_event_t humidity, temp;
 } Package;
 /*------------------------------- Variables -------------------------------*/
@@ -124,6 +124,10 @@ void processInput_Task()
     Serial.println("Sensing..."); // Start sensing
 
     Package *pack = memPool.try_alloc(); // Allocate memory for package
+    Wire.requestFrom(MQ_UNO_ADDRESS, sizeof(float) * 3);
+    Wire.readBytes((byte *)&pack->methane, sizeof(float));
+    Wire.readBytes((byte *)&pack->carbon_monoxide, sizeof(float));
+    Wire.readBytes((byte *)&pack->alcohol, sizeof(float));
     pack->lux = lightMeter.readLightLevel();
     humTemp.getEvent(&pack->humidity, &pack->temp);
     pack->moist = analogRead(MOISTURE_PIN);
@@ -206,7 +210,13 @@ void memMgr_Task()
     dataFile.print(',');
     dataFile.print(pack->humidity.relative_humidity);
     dataFile.print(',');
-    dataFile.println(pack->moist);
+    dataFile.print(pack->moist);
+    dataFile.print(',');
+    dataFile.print(pack->methane);
+    dataFile.print(',');
+    dataFile.print(pack->carbon_monoxide);
+    dataFile.print(',');
+    dataFile.println(pack->alcohol);
 
     dataFile.close();
 
