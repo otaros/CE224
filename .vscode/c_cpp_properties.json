@@ -10,7 +10,6 @@
             "includePath": [
                 "c:/Users/ADMIN/workspace/CE224_Dat/include",
                 "c:/Users/ADMIN/workspace/CE224_Dat/src",
-                "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit ST7735 and ST7789 Library",
                 "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/SD/src",
                 "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit SSD1306",
                 "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit GFX Library",
@@ -25,7 +24,6 @@
                 "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/cores/arduino/api/deprecated-avr-comp",
                 "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/variants/ARDUINO_NANO33BLE",
                 "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit SH110X",
-                "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit seesaw Library",
                 "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/libraries/Camera/src",
                 "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/libraries/Ethernet/src",
                 "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/libraries/GC2145",
@@ -68,7 +66,6 @@
                 "path": [
                     "c:/Users/ADMIN/workspace/CE224_Dat/include",
                     "c:/Users/ADMIN/workspace/CE224_Dat/src",
-                    "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit ST7735 and ST7789 Library",
                     "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/SD/src",
                     "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit SSD1306",
                     "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit GFX Library",
@@ -83,7 +80,6 @@
                     "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/cores/arduino/api/deprecated-avr-comp",
                     "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/variants/ARDUINO_NANO33BLE",
                     "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit SH110X",
-                    "c:/Users/ADMIN/workspace/CE224_Dat/.pio/libdeps/nano33ble/Adafruit seesaw Library",
                     "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/libraries/Camera/src",
                     "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/libraries/Ethernet/src",
                     "C:/Users/ADMIN/.platformio/packages/framework-arduino-mbed/libraries/GC2145",
