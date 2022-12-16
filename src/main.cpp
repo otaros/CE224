@@ -67,17 +67,14 @@ void display_Task();
 void memMgr_Task();
 void startNewSensingCycle();
 void writetoSDCard();
+void initPeripherals();
 float toPercent(int, float, float, float, float);
 
 /*---------------------------------- Code ----------------------------------*/
 void setup()
 {
   Serial.begin(9600); // Initialize serial port
-  Wire.begin();
-  display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS); // Initialize display
-  lightMeter.begin();                                   // Initialize light meter
-  humTemp.begin();                                      // Initialize humidity and temperature sensor
-  SD.begin(9);                                          // Initialize SD card
+  initPeripherals();  // Initialize peripherals
 
   senseTicker.attach(&startNewSensingCycle, chrono::seconds(REFRESH_TIME)); // Auto set Sensing flag every 5 seconds
   writeSDCard.attach(&writetoSDCard, chrono::seconds(20));                  // Auto write to SD card every 20 seconds
@@ -120,8 +117,8 @@ void processInput_Task()
   while (1)
   {
     flag1.wait_any(NEW_SENSING_CYCLE_FLAG); // Wait for sensing signal
-
-    Serial.println("Sensing..."); // Start sensing
+    initPeripherals();                      // Reinitialize peripherals
+    Serial.println("Sensing...");           // Start sensing
 
     Package *pack = memPool.try_alloc(); // Allocate memory for package
     Wire.requestFrom(MQ_UNO_ADDRESS, sizeof(float) * 3);
@@ -256,4 +253,13 @@ void startNewSensingCycle()
 void writetoSDCard()
 {
   flag2.set(WRITE_SD_CARD_FLAG);
+}
+
+void initPeripherals()
+{
+  Wire.begin();
+  display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS); // Initialize display
+  lightMeter.begin();                                   // Initialize light meter
+  humTemp.begin();                                      // Initialize humidity and temperature sensor
+  SD.begin(9);                                          // Initialize SD card
 }

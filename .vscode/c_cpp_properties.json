@@ -198,7 +198,7 @@
             ],
             "cStandard": "c11",
             "cppStandard": "c++14",
-            "compilerPath": "C:/Users/ADMIN/.platformio/packages/toolchain-gccarmnoneeabi@1.80201.190214/bin/arm-none-eabi-gcc.exe",
+            "compilerPath": "C:/Users/ADMIN/.platformio/packages/toolchain-gccarmnoneeabi@1.80201.181220/bin/arm-none-eabi-gcc.exe",
             "compilerArgs": [
                 "-mcpu=cortex-m4",
                 "-mfloat-abi=softfp",
