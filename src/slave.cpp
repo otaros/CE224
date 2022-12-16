@@ -1,6 +1,8 @@
+/*-------------------------------- Includes --------------------------------*/
 #include <MQUnifiedsensor.h>
 #include <Wire.h>
 
+/*--------------------------------- Define ---------------------------------*/
 #define Board ("Arduino UNO")
 #define Pin (A0) // Analog input 3 of your arduino
 /***********************Software Related Macros************************************/
@@ -8,14 +10,17 @@
 #define Voltage_Resolution (5)
 #define ADC_Bit_Resolution (10) // For arduino UNO/MEGA/NANO
 #define RatioMQ3CleanAir (60)   // RS / R0 = 60 ppm
-
+/*-------------------------------- Typedef --------------------------------*/
 typedef struct
 {
     float alcohol = 0.0, methane = 0.0, carbon_monoxide = 0.0;
 } Package;
-
+/*------------------------------- Instances -------------------------------*/
 MQUnifiedsensor MQ3(Board, Voltage_Resolution, ADC_Bit_Resolution, Pin, Type);
+/*-------------------------- Functions prototype --------------------------*/
+void sendSensorValue();
 
+/*--------------------------------- Code ---------------------------------*/
 void setup()
 {
     // put your setup code here, to run once:

@@ -1,5 +1,5 @@
-#include <mbed.h>
 /*-------------------------------- Includes --------------------------------*/
+#include <mbed.h>
 #include "BH1750.h"
 #include "Adafruit_AHTX0.h"
 #include "Adafruit_SSD1306.h"
