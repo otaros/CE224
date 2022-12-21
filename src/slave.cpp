@@ -75,11 +75,13 @@ void loop()
     if (c == '1')
     {
         Serial.println("Received request");
+        MQ3.update();
         MQ3.setA(-0.062102441);
         MQ3.setB(1.842498924);
         pack.methane = MQ3.readSensor();
         // Wire.write((byte *)&pack.methane, sizeof(float));
         mySerial.write((byte *)&pack.methane, sizeof(float));
+        Serial.print("CH4: ");
         Serial.println(pack.methane);
 
         MQ3.setA(-0.884918621);
@@ -87,6 +89,7 @@ void loop()
         pack.carbon_monoxide = MQ3.readSensor();
         // Wire.write((byte *)&pack.carbon_monoxide, sizeof(float));
         mySerial.write((byte *)&pack.carbon_monoxide, sizeof(float));
+        Serial.print("CO: ");
         Serial.println(pack.carbon_monoxide);
 
         MQ3.setA(-0.754896547);
@@ -94,11 +97,13 @@ void loop()
         pack.alcohol = MQ3.readSensor();
         // Wire.write((byte *)&pack.alcohol, sizeof(float));
         mySerial.write((byte *)&pack.alcohol, sizeof(float));
+        Serial.print("Alcohol: ");
         Serial.println(pack.alcohol);
 
         pack.moisture = analogRead(MOISTURE_PIN);
         // Wire.write((byte *)&pack.moisture, sizeof(float));
         mySerial.write((byte *)&pack.moisture, sizeof(float));
+        Serial.print("Moisture: ");
         Serial.println(pack.moisture);
 
         // Wire.endTransmission();
