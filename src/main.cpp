@@ -13,7 +13,7 @@
 #define OLED_RESET -1
 #define DISPLAY_ADDRESS 0x3C
 #define LIGHT_METTER_ADDRESS 0x23
-#define MQ_UNO_ADDRESS 0x30
+#define MQ_UNO_ADDRESS 0x03
 #define REFRESH_TIME 5
 #define MOISTURE_PIN A0
 #define MOSI_PIN SPI_PSELMOSI0
@@ -74,7 +74,8 @@ float toPercent(int, float, float, float, float);
 void setup()
 {
   Serial.begin(9600); // Initialize serial port
-  initPeripherals();  // Initialize peripherals
+  Serial1.begin(9600);
+  initPeripherals(); // Initialize peripherals
 
   senseTicker.attach(&startNewSensingCycle, chrono::seconds(REFRESH_TIME)); // Auto set Sensing flag every 5 seconds
   writeSDCard.attach(&writetoSDCard, chrono::seconds(20));                  // Auto write to SD card every 20 seconds
@@ -117,17 +118,34 @@ void processInput_Task()
   while (1)
   {
     flag1.wait_any(NEW_SENSING_CYCLE_FLAG); // Wait for sensing signal
-    initPeripherals();                      // Reinitialize peripherals
     Serial.println("Sensing...");           // Start sensing
 
     Package *pack = memPool.try_alloc(); // Allocate memory for package
-    Wire.requestFrom(MQ_UNO_ADDRESS, sizeof(float) * 3);
-    Wire.readBytes((byte *)&pack->methane, sizeof(float));
-    Wire.readBytes((byte *)&pack->carbon_monoxide, sizeof(float));
-    Wire.readBytes((byte *)&pack->alcohol, sizeof(float));
+    // Wire.requestFrom(MQ_UNO_ADDRESS, sizeof(float) * 4);
+    // Wire.readBytes((byte *)&pack->methane, sizeof(float));
+    // Wire.readBytes((byte *)&pack->carbon_monoxide, sizeof(float));
+    // Wire.readBytes((byte *)&pack->alcohol, sizeof(float));
+    // Wire.readBytes((byte *)&pack->moist, sizeof(float));
+    Serial1.write('1');
+    // while (Serial1.available() == 0)
+    ;
+    Serial1.readBytes((byte *)&pack->methane, sizeof(float));
+    Serial.println(pack->methane);
+    // while (Serial1.available() == 0)
+    ;
+    Serial1.readBytes((byte *)&pack->carbon_monoxide, sizeof(float));
+    Serial.println(pack->carbon_monoxide);
+    // while (Serial1.available() == 0)
+    ;
+    Serial1.readBytes((byte *)&pack->alcohol, sizeof(float));
+    Serial.println(pack->alcohol);
+    // while (Serial1.available() == 0)
+    ;
+    Serial1.readBytes((byte *)&pack->moist, sizeof(float));
+    Serial.println(pack->moist);
+
     pack->lux = lightMeter.readLightLevel();
     humTemp.getEvent(&pack->humidity, &pack->temp);
-    pack->moist = analogRead(MOISTURE_PIN);
     pack->moist = toPercent(pack->moist, 0.0, 1024.0, 0.0, 100.0);
 
     // use for testing purpose
@@ -257,7 +275,7 @@ void writetoSDCard()
 
 void initPeripherals()
 {
-  Wire.begin();
+  Wire.begin();                                         // Initialize I2C
   display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS); // Initialize display
   lightMeter.begin();                                   // Initialize light meter
   humTemp.begin();                                      // Initialize humidity and temperature sensor

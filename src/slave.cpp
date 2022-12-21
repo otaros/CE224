@@ -1,10 +1,14 @@
 /*-------------------------------- Includes --------------------------------*/
 #include <MQUnifiedsensor.h>
 #include <Wire.h>
+#include <SoftwareSerial.h>
 
 /*--------------------------------- Define ---------------------------------*/
 #define Board ("Arduino UNO")
-#define Pin (A0) // Analog input 3 of your arduino
+#define MQ3_Pin (A0)
+#define MOISTURE_PIN (A1)
+#define SOFT_SERIAL_RX (2)
+#define SOFT_SERIAL_TX (3)
 /***********************Software Related Macros************************************/
 #define Type ("MQ-3") // MQ3
 #define Voltage_Resolution (5)
@@ -13,10 +17,13 @@
 /*-------------------------------- Typedef --------------------------------*/
 typedef struct
 {
-    float alcohol = 0.0, methane = 0.0, carbon_monoxide = 0.0;
+    float alcohol = 0.0, methane = 0.0, carbon_monoxide = 0.0, moisture = 0.0;
 } Package;
 /*------------------------------- Instances -------------------------------*/
-MQUnifiedsensor MQ3(Board, Voltage_Resolution, ADC_Bit_Resolution, Pin, Type);
+MQUnifiedsensor MQ3(Board, Voltage_Resolution, ADC_Bit_Resolution, MQ3_Pin, Type);
+SoftwareSerial mySerial(2, 3); // RX, TX
+/*------------------------------- Variables -------------------------------*/
+Package pack;
 /*-------------------------- Functions prototype --------------------------*/
 void sendSensorValue();
 
@@ -25,6 +32,7 @@ void setup()
 {
     // put your setup code here, to run once:
     Serial.begin(9600);
+    mySerial.begin(9600);
 
     MQ3.setRegressionMethod(0);
     MQ3.init();
@@ -53,46 +61,87 @@ void setup()
             ;
     }
 
-    Wire.begin(0x30);
-    Wire.onRequest(sendSensorValue);
+    // Wire.begin(0x03);
+    // Serial.println("I2C Slave started");
+    // Wire.onRequest(sendSensorValue);
 }
 
 void loop()
 {
     // put your main code here, to run repeatedly:
+    while (mySerial.available() == 0)
+        ;
+    char c = mySerial.read();
+    if (c == '1')
+    {
+        Serial.println("Received request");
+        MQ3.setA(-0.062102441);
+        MQ3.setB(1.842498924);
+        pack.methane = MQ3.readSensor();
+        // Wire.write((byte *)&pack.methane, sizeof(float));
+        mySerial.write((byte *)&pack.methane, sizeof(float));
+        Serial.println(pack.methane);
+
+        MQ3.setA(-0.884918621);
+        MQ3.setB(4.574317431);
+        pack.carbon_monoxide = MQ3.readSensor();
+        // Wire.write((byte *)&pack.carbon_monoxide, sizeof(float));
+        mySerial.write((byte *)&pack.carbon_monoxide, sizeof(float));
+        Serial.println(pack.carbon_monoxide);
+
+        MQ3.setA(-0.754896547);
+        MQ3.setB(1.996459667);
+        pack.alcohol = MQ3.readSensor();
+        // Wire.write((byte *)&pack.alcohol, sizeof(float));
+        mySerial.write((byte *)&pack.alcohol, sizeof(float));
+        Serial.println(pack.alcohol);
+
+        pack.moisture = analogRead(MOISTURE_PIN);
+        // Wire.write((byte *)&pack.moisture, sizeof(float));
+        mySerial.write((byte *)&pack.moisture, sizeof(float));
+        Serial.println(pack.moisture);
+
+        // Wire.endTransmission();
+        // Wire.write((byte*)&pack, sizeof(Package));
+        // Wire.write((byte*)&pack.alcohol, sizeof(float));
+        Serial.println("Sent!");
+    }
 }
 
 void sendSensorValue()
 {
-    Serial.println("Received request");
-    Package pack;
-    MQ3.update();
+    // Serial.println("Received request");
+    // Package pack;
+    // MQ3.update();
 
-    MQ3.setA(-0.062102441);
-    MQ3.setB(1.842498924);
-    pack.methane = MQ3.readSensor();
-    Wire.write((byte *)&pack.methane, sizeof(float));
+    // MQ3.setA(-0.062102441);
+    // MQ3.setB(1.842498924);
+    // pack.methane = MQ3.readSensor();
+    // Wire.write((byte *)&pack.methane, sizeof(float));
 
-    MQ3.setA(-0.884918621);
-    MQ3.setB(4.574317431);
-    pack.carbon_monoxide = MQ3.readSensor();
-    Wire.write((byte *)&pack.carbon_monoxide, sizeof(float));
+    // MQ3.setA(-0.884918621);
+    // MQ3.setB(4.574317431);
+    // pack.carbon_monoxide = MQ3.readSensor();
+    // Wire.write((byte *)&pack.carbon_monoxide, sizeof(float));
 
-    MQ3.setA(-0.754896547);
-    MQ3.setB(1.996459667);
-    pack.alcohol = MQ3.readSensor();
-    Wire.write((byte *)&pack.alcohol, sizeof(float));
+    // MQ3.setA(-0.754896547);
+    // MQ3.setB(1.996459667);
+    // pack.alcohol = MQ3.readSensor();
+    // Wire.write((byte *)&pack.alcohol, sizeof(float));
 
-    Wire.endTransmission();
-    // Wire.write((byte*)&pack, sizeof(Package));
-    // Wire.write((byte*)&pack.alcohol, sizeof(float));
+    // pack.moisture = analogRead(MOISTURE_PIN);
+    // Wire.write((byte *)&pack.moisture, sizeof(float));
 
-    Serial.print(pack.alcohol);
-    Serial.print(" | ");
-    Serial.print(pack.methane);
-    Serial.print(" | ");
-    Serial.println(pack.carbon_monoxide);
-    Serial.println("Sent!");
+    // // Wire.endTransmission();
+    // // Wire.write((byte*)&pack, sizeof(Package));
+    // // Wire.write((byte*)&pack.alcohol, sizeof(float));
 
-    delay(1000);
+    // Serial.print(pack.alcohol);
+    // Serial.print(" | ");
+    // Serial.print(pack.methane);
+    // Serial.print(" | ");
+    // Serial.println(pack.carbon_monoxide);
+    // Serial.println("Sent!");
+
+    // delay(1000);
 }
