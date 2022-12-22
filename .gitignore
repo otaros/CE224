@@ -1,3 +1,5 @@
 .pio
 .vscode
 .$Blockdiagram.drawio.bkp
+.vscode/launch.json
+.vscode/c_cpp_properties.json
