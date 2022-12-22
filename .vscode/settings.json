@@ -1,6 +1,0 @@
-{
-    "editor.acceptSuggestionOnEnter": "off",
-    "files.associations": {
-        "*.x": "cpp"
-    }
-}
