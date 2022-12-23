@@ -167,10 +167,10 @@ void display_Task()
   float displayLux = 0.0, displayTemp = 0.0, displayHum = 0.0, displayMoist = 0.0, displayMethane = 0.0, displayCO = 0.0, displayAlcohol = 0.0;
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-
+  flag1.wait_any(READY_TO_DISPLAY_FLAG, osWaitForever, false);
   while (1)
   {
-    if (flag1.wait_any(READY_TO_DISPLAY_FLAG) == READY_TO_DISPLAY_FLAG) // If new data processed
+    if (flag1.wait_any_for(READY_TO_DISPLAY_FLAG, chrono::milliseconds(5)) == READY_TO_DISPLAY_FLAG) // If new data processed
     {
       Package *pack = nullptr;
       dataForDisplay.try_get(&pack);
