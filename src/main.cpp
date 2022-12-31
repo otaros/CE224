@@ -13,7 +13,7 @@
 #define OLED_RESET -1
 #define DISPLAY_ADDRESS 0x3C
 #define LIGHT_METTER_ADDRESS 0x23
-#define MQ_UNO_ADDRESS 0x03
+// #define MQ_UNO_ADDRESS 0x03
 #define REFRESH_TIME 5
 #define MOISTURE_PIN A0
 #define MOSI_PIN SPI_PSELMOSI0
@@ -113,46 +113,30 @@ void App_Task()
 
 void processInput_Task()
 {
-  // sensors_event_t humidityRaw, tempeRaw;
-  // float *luxRaw = new float(0.0);
   while (1)
   {
     flag1.wait_any(NEW_SENSING_CYCLE_FLAG); // Wait for sensing signal
     Serial.println("Sensing...");           // Start sensing
 
     Package *pack = memPool.try_alloc(); // Allocate memory for package
-    // Wire.requestFrom(MQ_UNO_ADDRESS, sizeof(float) * 4);
-    // Wire.readBytes((byte *)&pack->methane, sizeof(float));
-    // Wire.readBytes((byte *)&pack->carbon_monoxide, sizeof(float));
-    // Wire.readBytes((byte *)&pack->alcohol, sizeof(float));
-    // Wire.readBytes((byte *)&pack->moist, sizeof(float));
+
     Serial1.write('1');
-    // while (Serial1.available() == 0)
-    ;
+
+    // Note: the readBytes function will wait approximately 1 second (default) for each bit of data from the UART.
+    // If any bit of data is not received within the timeout period, the function will return with the data received so far.
+    // The timeout can be set using the setTimeout function.
     Serial1.readBytes((byte *)&pack->methane, sizeof(float));
-    Serial.println(pack->methane);
-    // while (Serial1.available() == 0)
-    ;
+    // Serial.println(pack->methane);
     Serial1.readBytes((byte *)&pack->carbon_monoxide, sizeof(float));
-    Serial.println(pack->carbon_monoxide);
-    // while (Serial1.available() == 0)
-    ;
+    // Serial.println(pack->carbon_monoxide);
     Serial1.readBytes((byte *)&pack->alcohol, sizeof(float));
-    Serial.println(pack->alcohol);
-    // while (Serial1.available() == 0)
-    ;
+    // Serial.println(pack->alcohol);
     Serial1.readBytes((byte *)&pack->moist, sizeof(float));
-    Serial.println(pack->moist);
+    // Serial.println(pack->moist);
 
     pack->lux = lightMeter.readLightLevel();
     humTemp.getEvent(&pack->humidity, &pack->temp);
     pack->moist = toPercent(pack->moist, 0.0, 1024.0, 0.0, 100.0);
-
-    // use for testing purpose
-    // pack->lux = rand() % 100 * 0.976;
-    // pack->temp.temperature = random(0, 50) * 0.983;
-    // pack->humidity.relative_humidity = random(0, 100) * 0.982;
-    // pack->moist = rand() % 100 * 0.967;
 
     dataFromSensor.try_put(pack); // Push data to rawData
 
@@ -257,7 +241,7 @@ void memMgr_Task()
     memPool.free(pack);
   }
 }
-
+/*--------------------------------------------------------------------------*/
 float toPercent(int x, float in_min = 0.0, float in_max = 1024.0, float out_min = 0.0, float out_max = 100.0)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -275,7 +259,6 @@ void writetoSDCard()
 
 void initPeripherals()
 {
-  Wire.begin();                                         // Initialize I2C
   display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS); // Initialize display
   lightMeter.begin();                                   // Initialize light meter
   humTemp.begin();                                      // Initialize humidity and temperature sensor
